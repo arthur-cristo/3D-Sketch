@@ -1,17 +1,12 @@
 import type { Canvas } from "fabric";
 
-const resizeCanvas = (
-  canvas: Canvas,
-  containerWidth: number,
-  containerHeight: number,
-  originalWidth: number
-) => {
-  const zoom = containerWidth / originalWidth;
+const resizeCanvas = (canvas: Canvas) => {
+  const container = document.getElementById("fabric-canvas-container");
+  if (!container) return;
   canvas.setDimensions({
-    width: containerWidth,
-    height: containerHeight,
+    width: container.clientWidth,
+    height: container.clientHeight,
   });
-  canvas.setZoom(zoom);
   canvas.renderAll();
 };
 

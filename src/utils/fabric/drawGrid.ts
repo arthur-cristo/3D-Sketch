@@ -1,52 +1,62 @@
-import { Line } from "fabric";
+import { Line, Group } from "fabric";
 import type { Canvas } from "fabric";
 
-const drawGrid = (canvas: Canvas, desiredCell = 20) => {
+export const drawGrid = (
+  canvas: Canvas,
+  screenCellSize = 20
+) => {
   canvas
     .getObjects()
     .filter((o) => (o as any).isGrid)
     .forEach((o) => canvas.remove(o));
 
   const zoom = canvas.getZoom();
-  const width = canvas.getWidth() / zoom;
-  const height = canvas.getHeight() / zoom;
-  desiredCell = desiredCell / zoom;
+  const vpt = canvas.viewportTransform;
+  if (!vpt) {
+    return;
+  }
 
-  const approxCols = Math.max(1, Math.round(width / desiredCell));
-  const approxRows = Math.max(1, Math.round(height / desiredCell));
-  const cellSize = Math.min(width / approxCols, height / approxRows);
+  const viewportLeft = -vpt[4] / zoom;
+  const viewportTop = -vpt[5] / zoom;
+  const viewportRight = viewportLeft + canvas.getWidth() / zoom;
+  const viewportBottom = viewportTop + canvas.getHeight() / zoom;
 
-  const cols = Math.round(width / cellSize);
-  const rows = Math.round(height / cellSize);
+  const worldCellSize = screenCellSize / zoom;
   const strokeWidth = 1 / zoom;
 
-  for (let i = 0; i <= cols; i++) {
-    const x = Math.round(i * cellSize);
-    const line = new Line([x, 0, x, height], {
+  const firstCol = Math.floor(viewportLeft / worldCellSize) * worldCellSize;
+  const firstRow = Math.floor(viewportTop / worldCellSize) * worldCellSize;
+
+  const gridLines = new Group([], {
+    left: 0,
+    top: 0,
+    selectable: false,
+    evented: false,
+  });
+  gridLines.set({ isGrid: true });
+  for (let x = firstCol; x <= viewportRight; x += worldCellSize) {
+    const line = new Line([x, viewportTop, x, viewportBottom], {
       stroke: "#ddd",
       strokeWidth: strokeWidth,
       selectable: false,
       evented: false,
     });
     (line as any).isGrid = true;
-    canvas.add(line);
-    canvas.sendObjectToBack(line);
+    gridLines.add(line);
   }
 
-  for (let j = 0; j <= rows; j++) {
-    const y = Math.round(j * cellSize);
-    const line = new Line([0, y, width, y], {
+  for (let y = firstRow; y <= viewportBottom; y += worldCellSize) {
+    const line = new Line([viewportLeft, y, viewportRight, y], {
       stroke: "#ddd",
       strokeWidth: strokeWidth,
       selectable: false,
       evented: false,
     });
     (line as any).isGrid = true;
-    canvas.add(line);
-    canvas.sendObjectToBack(line);
+    gridLines.add(line);
   }
-
-  canvas.requestRenderAll();
+  canvas.add(gridLines);
+  canvas.sendObjectToBack(gridLines);
 };
 
 export default drawGrid;
