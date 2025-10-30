@@ -1,4 +1,3 @@
-import "./App.css";
 import TwoDimensionCanvas from "./components/2d";
 
 function App() {

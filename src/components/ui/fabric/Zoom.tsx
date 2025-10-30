@@ -1,24 +1,25 @@
 import { HStack, Text } from "@chakra-ui/react";
 import { useFabric } from "../../../contexts/FabricContext";
 import { Tooltip } from "../tooltip";
-import THEME from "../../../constants/theme";
+import { useThemeApp } from "../../../contexts/ThemeAppContext";
 
 const Zoom = () => {
   const { canvasZoom } = useFabric();
+  const { THEME } = useThemeApp();
   return (
     <HStack
-      position="fixed"
+      position="absolute"
       bottom={5}
       left={5}
       zIndex={1}
-      bgColor={THEME.button.bgColor}
+      bgColor={THEME.bgColor.secondary}
       borderRadius="lg"
-      gap={8}
+      gap={6}
     >
       <Text
-        color="black"
+        color={THEME.color.primary}
         onClick={canvasZoom.decreaseZoom}
-        _hover={{ bgColor: THEME.button._hover.bgColor }}
+        _hover={{ bgColor: THEME.bgColor.hover }}
         fontSize="lg"
         cursor="pointer"
         py={2}
@@ -30,7 +31,7 @@ const Zoom = () => {
       </Text>
       <Tooltip content="Redefinir o zoom" showArrow openDelay={0}>
         <Text
-          color="black"
+          color={THEME.color.primary}
           cursor="pointer"
           onClick={() => canvasZoom.setZoom(1)}
         >
@@ -38,9 +39,9 @@ const Zoom = () => {
         </Text>
       </Tooltip>
       <Text
-        color="black"
+        color={THEME.color.primary}
         onClick={canvasZoom.increaseZoom}
-        _hover={{ bgColor: THEME.button._hover.bgColor }}
+        _hover={{ bgColor: THEME.bgColor.hover }}
         fontSize="lg"
         cursor="pointer"
         py={2}

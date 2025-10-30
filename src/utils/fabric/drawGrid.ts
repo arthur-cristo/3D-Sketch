@@ -1,7 +1,13 @@
-import { Line, Group } from "fabric";
+import { Line, Group, Rect } from "fabric";
 import type { Canvas } from "fabric";
 
-export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
+export const drawGrid = (
+  canvas: Canvas,
+  width: number,
+  height: number,
+  gridColor = "#ddd",
+  screenCellSize = 20
+) => {
   canvas
     .getObjects()
     .filter((o) => (o as any).isGrid)
@@ -15,8 +21,8 @@ export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
 
   const viewportLeft = -vpt[4] / zoom;
   const viewportTop = -vpt[5] / zoom;
-  const viewportRight = viewportLeft + 1920 / zoom;
-  const viewportBottom = viewportTop + 1080 / zoom;
+  const viewportRight = viewportLeft + width / zoom;
+  const viewportBottom = viewportTop + height / zoom;
 
   const worldCellSize = screenCellSize / zoom;
   const strokeWidth = 1 / zoom;
@@ -30,10 +36,10 @@ export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
     selectable: false,
     evented: false,
   });
-  gridLines.set({ isGrid: true });
+  gridLines.set({ isGridGroup: true });
   for (let x = firstCol; x <= viewportRight; x += worldCellSize) {
     const line = new Line([x, viewportTop, x, viewportBottom], {
-      stroke: "#ddd",
+      stroke: gridColor,
       strokeWidth: strokeWidth,
       selectable: false,
       evented: false,
@@ -44,7 +50,7 @@ export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
 
   for (let y = firstRow; y <= viewportBottom; y += worldCellSize) {
     const line = new Line([viewportLeft, y, viewportRight, y], {
-      stroke: "#ddd",
+      stroke: gridColor,
       strokeWidth: strokeWidth,
       selectable: false,
       evented: false,
@@ -52,6 +58,13 @@ export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
     (line as any).isGrid = true;
     gridLines.add(line);
   }
+  const clipPath = new Rect({
+    left: viewportLeft,
+    top: viewportTop,
+    width: width / zoom,
+    height: height / zoom,
+  });
+  canvas.clipPath = clipPath;
   canvas.add(gridLines);
   canvas.sendObjectToBack(gridLines);
 };

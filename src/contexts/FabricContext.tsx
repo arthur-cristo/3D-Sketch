@@ -11,7 +11,7 @@ import {
 } from "react";
 import * as fabric from "fabric";
 import { resizeCanvas, drawGrid } from "../utils/fabric";
-import type { TPointerEvent } from "fabric";
+import { useThemeApp } from "./ThemeAppContext";
 
 type CanvasZoom = {
   zoom: number;
@@ -28,6 +28,8 @@ interface FabricContext {
   setMode: Dispatch<SetStateAction<"select" | "draw" | "drag">>;
   showGrid: boolean;
   setShowGrid: Dispatch<SetStateAction<boolean>>;
+  worldSize: { width: number; height: number };
+  setWorldSize: Dispatch<SetStateAction<{ width: number; height: number }>>;
 }
 
 export const FabricContext = createContext<FabricContext>({} as FabricContext);
@@ -38,10 +40,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [zoom, setZoom] = useState(canvas?.getZoom() || 1);
   const [showGrid, setShowGrid] = useState(true);
-  const WORLD_SIZE = {
-    width: 1920,
-    height: 1080,
-  };
+  const [worldSize, setWorldSize] = useState({ width: 1920, height: 1080 });
+  const { THEME, colorMode } = useThemeApp();
   const canvasZoom: CanvasZoom = {
     zoom,
     decreaseZoom: () => {
@@ -79,7 +79,12 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     handleResize();
     window.addEventListener("resize", handleResize);
 
-    drawGrid(canvas);
+    drawGrid(
+      canvas,
+      worldSize.width,
+      worldSize.height,
+      THEME.borderColor.separator
+    );
     const rect = new fabric.Rect({
       left: 100,
       top: 100,
@@ -181,7 +186,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     };
 
     canvas.on("object:moving", (o) => {
-      console.log("Object is moving", o);
+      console.log("Object is moving", o.target);
     });
 
     canvas.on("mouse:down", handleMouseDown);
@@ -200,12 +205,24 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!canvas) return;
 
-    const grid = canvas.getObjects().find((o) => (o as any).isGrid);
+    const grid = canvas.getObjects().find((o) => (o as any).isGridGroup);
     if (grid) {
       grid.visible = showGrid;
+      grid.selectable = false;
     }
     canvas.requestRenderAll();
   }, [canvas, showGrid]);
+
+  useEffect(() => {
+    if (!canvas) return;
+    const grid = canvas.getObjects().find((o) => (o as any).isGridGroup);
+    if (grid) {
+      (grid as fabric.Group).getObjects().forEach((line) => {
+        line.set("stroke", THEME.borderColor.separator);
+      });
+    }
+    canvas.requestRenderAll();
+  }, [canvas, colorMode]);
 
   return (
     <FabricContext.Provider
@@ -217,6 +234,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         setMode,
         showGrid,
         setShowGrid,
+        worldSize,
+        setWorldSize,
       }}
     >
       {children}
