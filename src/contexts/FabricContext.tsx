@@ -10,8 +10,10 @@ import {
   type SetStateAction,
 } from "react";
 import * as fabric from "fabric";
-import { resizeCanvas, drawGrid } from "../utils/fabric";
+import { resizeCanvas, drawGrid, findSnapPoint } from "../utils/fabric";
 import { useThemeApp } from "./ThemeAppContext";
+import useIsMobile from "../hooks/useIsMobile";
+import type { Modes } from "../types";
 
 type CanvasZoom = {
   zoom: number;
@@ -24,8 +26,8 @@ interface FabricContext {
   canvas: fabric.Canvas | null;
   canvasRef: RefObject<HTMLCanvasElement | null>;
   canvasZoom: CanvasZoom;
-  mode: "select" | "draw" | "drag";
-  setMode: Dispatch<SetStateAction<"select" | "draw" | "drag">>;
+  mode: Modes;
+  setMode: Dispatch<SetStateAction<Modes>>;
   showGrid: boolean;
   setShowGrid: Dispatch<SetStateAction<boolean>>;
   worldSize: { width: number; height: number };
@@ -40,7 +42,10 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [zoom, setZoom] = useState(canvas?.getZoom() || 1);
   const [showGrid, setShowGrid] = useState(true);
-  const [worldSize, setWorldSize] = useState({ width: 1920, height: 1080 });
+  const isMobile = useIsMobile();
+  const [worldSize, setWorldSize] = useState(
+    isMobile ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 }
+  );
   const { THEME, colorMode } = useThemeApp();
   const canvasZoom: CanvasZoom = {
     zoom,
@@ -54,11 +59,20 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       setZoom(zoom);
     },
   };
-  const [mode, setMode] = useState<"select" | "draw" | "drag">("select");
+  const [mode, setMode] = useState<Modes>('select');
   const dragRef = useRef({
     isDragging: false,
     lastPosX: 0,
     lastPosY: 0,
+  });
+  const drawRef = useRef<{
+    isDrawing: boolean;
+    startPoint: { x: number; y: number } | fabric.Point | null;
+    previewLine: fabric.Line | null;
+  }>({
+    isDrawing: false,
+    startPoint: null,
+    previewLine: null,
   });
 
   useEffect(() => {
@@ -79,20 +93,17 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     handleResize();
     window.addEventListener("resize", handleResize);
 
+    const zoom = canvas.getZoom();
+    const translateX = canvas.width / 2 - (worldSize.width / 2) * zoom;
+    const translateY = canvas.height / 2 - (worldSize.height / 2) * zoom;
+    canvas.setViewportTransform([zoom, 0, 0, zoom, translateX, translateY]);
+
     drawGrid(
       canvas,
       worldSize.width,
       worldSize.height,
       THEME.borderColor.separator
     );
-    const rect = new fabric.Rect({
-      left: 100,
-      top: 100,
-      fill: "red",
-      width: 200,
-      height: 200,
-    });
-    canvas.add(rect);
 
     return () => {
       window.removeEventListener("resize", handleResize);
@@ -108,15 +119,35 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!canvas) return;
+
     const select = mode === "select";
     canvas.selection = select;
+
+    if (mode === "drag") {
+      canvas.defaultCursor = "grab";
+      canvas.hoverCursor = "grab";
+    } else if (mode === "select") {
+      canvas.defaultCursor = "default";
+      canvas.hoverCursor = "move";
+    } else {
+      canvas.defaultCursor = "default";
+      canvas.hoverCursor = "default";
+    }
+
     canvas
       .getObjects()
-      .filter((obj) => !(obj as any).isGrid)
+      .filter((obj) => !(obj as any).isGridGroup)
       .forEach((obj) => {
+        console.log(obj)
         obj.selectable = select;
+        if (mode === "drag") obj.hoverCursor = "grab";
+        else if (mode === "select") obj.hoverCursor = "move";
+        else obj.hoverCursor = "crosshair";
       });
-    const handleMouseDown = (opt: fabric.TEvent) => {
+
+    const handleMouseDown = (
+      opt: fabric.TPointerEventInfo<fabric.TPointerEvent>
+    ) => {
       const mouseEvent = opt.e as MouseEvent;
       const touchEvent = opt.e as TouchEvent;
       const x = mouseEvent.clientX ?? touchEvent.touches[0].clientX;
@@ -125,41 +156,61 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         x: x,
         y: y,
       };
-      if (mode === "drag" && cordinates.x && cordinates.y) {
+
+      if (mode === "drag") {
         dragRef.current.isDragging = true;
         dragRef.current.lastPosX = cordinates.x;
         dragRef.current.lastPosY = cordinates.y;
+        canvas.defaultCursor = "grabbing";
+        canvas.hoverCursor = "grabbing";
       }
     };
 
-    const handleMouseMove = (opt: fabric.TEvent) => {
-      const mouseEvent = opt.e as MouseEvent;
-      const touchEvent = opt.e as TouchEvent;
-      const x = mouseEvent.clientX ?? touchEvent.touches[0].clientX;
-      const y = mouseEvent.clientY ?? touchEvent.touches[0].clientY;
-      const cordinates = {
-        x: x,
-        y: y,
-      };
-      if (dragRef.current.isDragging && cordinates.x && cordinates.y) {
-        const vpt = canvas.viewportTransform;
+    const handleMouseMove = (
+      opt: fabric.TPointerEventInfo<fabric.TPointerEvent>
+    ) => {
+      if (!dragRef.current.isDragging) return;
 
-        const deltaX = cordinates.x - dragRef.current.lastPosX;
-        const deltaY = cordinates.y - dragRef.current.lastPosY;
+      const e = opt.e;
+      let x: number | undefined;
+      let y: number | undefined;
 
-        vpt[4] += deltaX;
-        vpt[5] += deltaY;
-
-        canvas.renderAll();
-
-        dragRef.current.lastPosX = cordinates.x;
-        dragRef.current.lastPosY = cordinates.y;
+      if (window.TouchEvent && e instanceof TouchEvent) {
+        if (e.touches && e.touches.length > 0) {
+          x = e.touches[0].clientX;
+          y = e.touches[0].clientY;
+        }
+      } else if (e instanceof MouseEvent) {
+        x = e.clientX;
+        y = e.clientY;
+      } else {
+        x = (e as any).clientX;
+        y = (e as any).clientY;
       }
+
+      if (x == null || y == null) return;
+
+      const vpt = canvas.viewportTransform;
+      const deltaX = x - dragRef.current.lastPosX;
+      const deltaY = y - dragRef.current.lastPosY;
+
+      vpt[4] += deltaX;
+      vpt[5] += deltaY;
+
+      canvas.renderAll();
+
+      dragRef.current.lastPosX = x;
+      dragRef.current.lastPosY = y;
     };
 
     const handleMouseUp = () => {
       canvas.setViewportTransform(canvas.viewportTransform);
       dragRef.current.isDragging = false;
+
+      if (mode === "drag") {
+        canvas.defaultCursor = "grab";
+        canvas.hoverCursor = "grab";
+      }
     };
 
     const handleMouseWheel = (opt: fabric.TEvent<WheelEvent>) => {
@@ -185,20 +236,127 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       opt.e.stopPropagation();
     };
 
-    canvas.on("object:moving", (o) => {
-      console.log("Object is moving", o.target);
-    });
+    const handleMouseDownDraw = (
+      e: fabric.TPointerEventInfo<fabric.TPointerEvent>
+    ) => {
+      if (mode !== "draw" || !e.viewportPoint) return;
 
-    canvas.on("mouse:down", handleMouseDown);
-    canvas.on("mouse:move", handleMouseMove);
-    canvas.on("mouse:up", handleMouseUp);
+      drawRef.current.isDrawing = true;
+      const pointer = canvas.getScenePoint(e.e);
+      const snapPoint = findSnapPoint(canvas, pointer);
+
+      drawRef.current.startPoint = snapPoint || pointer;
+
+      drawRef.current.previewLine = new fabric.Line(
+        [
+          drawRef.current.startPoint.x,
+          drawRef.current.startPoint.y,
+          drawRef.current.startPoint.x,
+          drawRef.current.startPoint.y,
+        ],
+        {
+          stroke: THEME.color.tooltip,
+          strokeWidth: 2 / canvas.getZoom(),
+          strokeDashArray: [5, 5],
+          selectable: false,
+          evented: false,
+        }
+      );
+      canvas.add(drawRef.current.previewLine);
+    };
+
+    const handleMouseMoveDraw = (
+      e: fabric.TPointerEventInfo<fabric.TPointerEvent>
+    ) => {
+      if (!e.viewportPoint || !drawRef.current.isDrawing || mode !== "draw")
+        return;
+      const pointer = canvas.getScenePoint(e.e);
+      const snapPoint = findSnapPoint(canvas, pointer);
+
+      const endPoint = snapPoint || pointer;
+
+      drawRef.current.previewLine?.set({
+        x2: endPoint.x,
+        y2: endPoint.y,
+      });
+      canvas.requestRenderAll();
+    };
+
+    const handleMouseUpDraw = (
+      e: fabric.TPointerEventInfo<fabric.TPointerEvent>
+    ) => {
+      if (mode !== "draw" || !drawRef.current.isDrawing || !e.viewportPoint) {
+        if (drawRef.current.previewLine) {
+          canvas.remove(drawRef.current.previewLine);
+          drawRef.current.previewLine = null;
+        }
+        drawRef.current.isDrawing = false;
+        drawRef.current.startPoint = null;
+        return;
+      }
+
+      drawRef.current.isDrawing = false;
+
+      if (drawRef.current.previewLine)
+        canvas.remove(drawRef.current.previewLine);
+      drawRef.current.previewLine = null;
+
+      const pointer = canvas.getScenePoint(e.e);
+      const snapPoint = findSnapPoint(canvas, pointer);
+      const endPoint = snapPoint || pointer;
+
+      if (
+        drawRef.current.startPoint?.x !== undefined &&
+        drawRef.current.startPoint?.y !== undefined &&
+        Math.hypot(
+          endPoint.x - drawRef.current.startPoint?.x,
+          endPoint.y - drawRef.current.startPoint?.y
+        ) > 0
+      ) {
+        const wall = new fabric.Line(
+          [
+            drawRef.current.startPoint.x,
+            drawRef.current.startPoint.y,
+            endPoint.x,
+            endPoint.y,
+          ],
+          {
+            stroke: THEME.color.primary,
+            strokeWidth: 6 / canvas.getZoom(),
+            selectable: false,
+            evented: true,
+            originX: "center",
+            originY: "center",
+            data: { isWall: true },
+          }
+        );
+        canvas.add(wall);
+      }
+
+      drawRef.current.startPoint = null;
+    };
+
     canvas.on("mouse:wheel", handleMouseWheel);
+    if (mode === "draw") {
+      canvas.on("mouse:down", handleMouseDownDraw);
+      canvas.on("mouse:move", handleMouseMoveDraw);
+      canvas.on("mouse:up", handleMouseUpDraw);
+    } else if (mode === "drag") {
+      canvas.on("mouse:down", handleMouseDown);
+      canvas.on("mouse:move", handleMouseMove);
+      canvas.on("mouse:up", handleMouseUp);
+    }
 
     return () => {
+      canvas.off("mouse:wheel", handleMouseWheel);
+
+      canvas.off("mouse:down", handleMouseDownDraw);
+      canvas.off("mouse:move", handleMouseMoveDraw);
+      canvas.off("mouse:up", handleMouseUpDraw);
+
       canvas.off("mouse:down", handleMouseDown);
       canvas.off("mouse:move", handleMouseMove);
       canvas.off("mouse:up", handleMouseUp);
-      canvas.off("mouse:wheel", handleMouseWheel);
     };
   }, [canvas, mode]);
 
@@ -221,6 +379,12 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         line.set("stroke", THEME.borderColor.separator);
       });
     }
+    const walls = canvas
+      .getObjects()
+      .filter((obj) => (obj as any).data?.isWall);
+    walls.forEach((wall) => {
+      wall.set("stroke", THEME.color.primary);
+    });
     canvas.requestRenderAll();
   }, [canvas, colorMode]);
 

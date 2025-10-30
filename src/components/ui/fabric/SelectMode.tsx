@@ -1,9 +1,47 @@
 import { HStack, Text } from "@chakra-ui/react";
 import { useFabric } from "../../../contexts/FabricContext";
 import { useThemeApp } from "../../../contexts/ThemeAppContext";
+import type { Modes } from "../../../types";
+
+const ModeSelector = () => {
+  const { mode, setMode } = useFabric();
+  const { THEME } = useThemeApp();
+  const modes: { mode: Modes; label: string }[] = [
+    { mode: "select", label: "S" },
+    { mode: "draw", label: "D" },
+    { mode: "drag", label: "D" },
+    { mode: "erase", label: "E" },
+  ];
+
+  return (
+    <>
+      {modes.map((m) => (
+        <Text
+          key={m.mode}
+          onClick={() => setMode(m.mode)}
+          color={mode === m.mode ? THEME.color.active : THEME.color.primary}
+          cursor="pointer"
+          _hover={{
+            bgColor:
+              mode === m.mode ? THEME.bgColor.active : THEME.bgColor.hover,
+          }}
+          borderRadius="lg"
+          p={2}
+          bgColor={mode === m.mode ? THEME.bgColor.active : "transparent"}
+          w="2.5rem"
+          h="2.5rem"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          {m.label}
+        </Text>
+      ))}
+    </>
+  );
+};
 
 const SelectMode = () => {
-  const { mode, setMode } = useFabric();
   const { THEME } = useThemeApp();
   return (
     <HStack
@@ -19,60 +57,7 @@ const SelectMode = () => {
       gap={2}
       boxShadow="sm"
     >
-      <Text
-        onClick={() => setMode("select")}
-        color={mode === "select" ? THEME.color.active : THEME.color.primary}
-        cursor="pointer"
-        _hover={{
-          bgColor:
-            mode === "select" ? THEME.bgColor.active : THEME.bgColor.hover,
-        }}
-        borderRadius="lg"
-        p={2}
-        bgColor={mode === "select" ? THEME.bgColor.active : "transparent"}
-        w="2.5rem"
-        h="2.5rem"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        S
-      </Text>
-      <Text
-        onClick={() => setMode("draw")}
-        color={mode === "draw" ? THEME.color.active : THEME.color.primary}
-        cursor="pointer"
-        _hover={{
-          bgColor: mode === "draw" ? THEME.bgColor.active : THEME.bgColor.hover,
-        }}
-        borderRadius="lg"
-        p={2}
-        bgColor={mode === "draw" ? THEME.bgColor.active : "transparent"}
-        w="2.5rem"
-        h="2.5rem"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        D
-      </Text>
-      <Text
-        onClick={() => setMode("drag")}
-        color={mode === "drag" ? THEME.color.active : THEME.color.primary}
-        cursor="pointer"
-        _hover={{
-          bgColor: mode === "drag" ? THEME.bgColor.active : THEME.bgColor.hover,
-        }}
-        borderRadius="lg"
-        bgColor={mode === "drag" ? THEME.bgColor.active : "transparent"}
-        w="2.5rem"
-        h="2.5rem"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        D
-      </Text>
+      <ModeSelector />
     </HStack>
   );
 };

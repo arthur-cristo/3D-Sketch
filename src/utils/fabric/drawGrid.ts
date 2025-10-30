@@ -6,7 +6,7 @@ export const drawGrid = (
   width: number,
   height: number,
   gridColor = "#ddd",
-  screenCellSize = 20
+  screenCellSize = 25
 ) => {
   canvas
     .getObjects()
@@ -19,11 +19,10 @@ export const drawGrid = (
     return;
   }
 
-  const viewportLeft = -vpt[4] / zoom;
-  const viewportTop = -vpt[5] / zoom;
-  const viewportRight = viewportLeft + width / zoom;
-  const viewportBottom = viewportTop + height / zoom;
-
+  const viewportLeft = 0 / zoom;
+  const viewportTop = 0 / zoom;
+  const viewportRight = width / zoom;
+  const viewportBottom = height / zoom;
   const worldCellSize = screenCellSize / zoom;
   const strokeWidth = 1 / zoom;
 
