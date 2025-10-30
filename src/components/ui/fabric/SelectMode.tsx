@@ -15,7 +15,7 @@ const SelectMode = () => {
       px={2}
       py={1}
       borderRadius="lg"
-      gap={8}
+      gap={2}
       boxShadow="sm"
     >
       <Text
@@ -33,8 +33,13 @@ const SelectMode = () => {
         bgColor={
           mode === "select" ? THEME.button._active.bgColor : "transparent"
         }
+        w="2rem"
+        h="2rem"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
       >
-        Select
+        S
       </Text>
       <Text
         onClick={() => setMode("draw")}
@@ -49,8 +54,13 @@ const SelectMode = () => {
         borderRadius="lg"
         p={2}
         bgColor={mode === "draw" ? THEME.button._active.bgColor : "transparent"}
+        w="2rem"
+        h="2rem"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
       >
-        Draw
+        D
       </Text>
       <Text
         onClick={() => setMode("drag")}
@@ -63,10 +73,14 @@ const SelectMode = () => {
               : THEME.button._hover.bgColor,
         }}
         borderRadius="lg"
-        p={2}
         bgColor={mode === "drag" ? THEME.button._active.bgColor : "transparent"}
+        w="2rem"
+        h="2rem"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
       >
-        Drag
+        D
       </Text>
     </HStack>
   );

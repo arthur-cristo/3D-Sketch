@@ -12,7 +12,11 @@ const Options = () => {
       top={5}
       left={5}
       bgColor={THEME.button.bgColor}
-      _hover={{ bgColor: THEME.button._hover.bgColor }}
+      border="none"
+      _hover={{
+        bgColor: THEME.button._hover.bgColor,
+        border: "none",
+      }}
       zIndex={1}
       borderRadius="lg"
       p={2}

@@ -1,10 +1,7 @@
 import { Line, Group } from "fabric";
 import type { Canvas } from "fabric";
 
-export const drawGrid = (
-  canvas: Canvas,
-  screenCellSize = 20
-) => {
+export const drawGrid = (canvas: Canvas, screenCellSize = 20) => {
   canvas
     .getObjects()
     .filter((o) => (o as any).isGrid)
@@ -18,8 +15,8 @@ export const drawGrid = (
 
   const viewportLeft = -vpt[4] / zoom;
   const viewportTop = -vpt[5] / zoom;
-  const viewportRight = viewportLeft + canvas.getWidth() / zoom;
-  const viewportBottom = viewportTop + canvas.getHeight() / zoom;
+  const viewportRight = viewportLeft + 1920 / zoom;
+  const viewportBottom = viewportTop + 1080 / zoom;
 
   const worldCellSize = screenCellSize / zoom;
   const strokeWidth = 1 / zoom;

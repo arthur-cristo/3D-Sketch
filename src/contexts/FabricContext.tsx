@@ -11,6 +11,7 @@ import {
 } from "react";
 import * as fabric from "fabric";
 import { resizeCanvas, drawGrid } from "../utils/fabric";
+import type { TPointerEvent } from "fabric";
 
 type CanvasZoom = {
   zoom: number;
@@ -38,8 +39,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   const [zoom, setZoom] = useState(canvas?.getZoom() || 1);
   const [showGrid, setShowGrid] = useState(true);
   const WORLD_SIZE = {
-    width: 3000,
-    height: 3000,
+    width: 1920,
+    height: 1080,
   };
   const canvasZoom: CanvasZoom = {
     zoom,
@@ -111,12 +112,15 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         obj.selectable = select;
       });
     const handleMouseDown = (opt: fabric.TEvent) => {
+      const mouseEvent = opt.e as MouseEvent;
+      const touchEvent = opt.e as TouchEvent;
+      const x = mouseEvent.clientX ?? touchEvent.touches[0].clientX;
+      const y = mouseEvent.clientY ?? touchEvent.touches[0].clientY;
       const cordinates = {
-        x: (opt as any).e.clientX,
-        y: (opt as any).e.clientY,
+        x: x,
+        y: y,
       };
-      if (!cordinates) return;
-      if (mode === "drag") {
+      if (mode === "drag" && cordinates.x && cordinates.y) {
         dragRef.current.isDragging = true;
         dragRef.current.lastPosX = cordinates.x;
         dragRef.current.lastPosY = cordinates.y;
@@ -124,11 +128,15 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const handleMouseMove = (opt: fabric.TEvent) => {
+      const mouseEvent = opt.e as MouseEvent;
+      const touchEvent = opt.e as TouchEvent;
+      const x = mouseEvent.clientX ?? touchEvent.touches[0].clientX;
+      const y = mouseEvent.clientY ?? touchEvent.touches[0].clientY;
       const cordinates = {
-        x: (opt as any).e.clientX,
-        y: (opt as any).e.clientY,
+        x: x,
+        y: y,
       };
-      if (dragRef.current.isDragging && mode === "drag" && cordinates) {
+      if (dragRef.current.isDragging && cordinates.x && cordinates.y) {
         const vpt = canvas.viewportTransform;
 
         const deltaX = cordinates.x - dragRef.current.lastPosX;
@@ -150,18 +158,31 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const handleMouseWheel = (opt: fabric.TEvent<WheelEvent>) => {
-      if (!(opt.e as WheelEvent).ctrlKey) return;
-      const pointer = (opt as any).pointer;
-      const delta = opt.e.deltaY;
-      let zoom = canvas.getZoom();
-      zoom *= 0.999 ** delta;
-      if (zoom > 20) zoom = 20;
-      if (zoom < 0.1) zoom = 0.1;
-      canvas.zoomToPoint(pointer, zoom);
-      setZoom(zoom);
+      if ((opt.e as WheelEvent).ctrlKey) {
+        const pointer = (opt as any).pointer;
+        const delta = opt.e.deltaY;
+        let zoom = canvas.getZoom();
+        zoom *= 0.999 ** delta;
+        if (zoom > 20) zoom = 20;
+        if (zoom < 0.1) zoom = 0.1;
+        canvas.zoomToPoint(pointer, zoom);
+        setZoom(zoom);
+      } else if (opt.e.shiftKey) {
+        const vpt = canvas.viewportTransform;
+        vpt[4] -= (opt.e as WheelEvent).deltaY;
+        canvas.requestRenderAll();
+      } else {
+        const vpt = canvas.viewportTransform;
+        vpt[5] -= (opt.e as WheelEvent).deltaY;
+        canvas.requestRenderAll();
+      }
       opt.e.preventDefault();
       opt.e.stopPropagation();
     };
+
+    canvas.on("object:moving", (o) => {
+      console.log("Object is moving", o);
+    });
 
     canvas.on("mouse:down", handleMouseDown);
     canvas.on("mouse:move", handleMouseMove);
