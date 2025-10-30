@@ -14,6 +14,7 @@ import { resizeCanvas, drawGrid, findSnapPoint } from "../utils/fabric";
 import { useThemeApp } from "./ThemeAppContext";
 import useIsMobile from "../hooks/useIsMobile";
 import type { Modes } from "../types";
+import { PIXELS_PER_CM, RULER_OFFSET } from "../constants";
 
 type CanvasZoom = {
   zoom: number;
@@ -59,7 +60,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       setZoom(zoom);
     },
   };
-  const [mode, setMode] = useState<Modes>('select');
+  const [mode, setMode] = useState<Modes>("select");
   const dragRef = useRef({
     isDragging: false,
     lastPosX: 0,
@@ -69,10 +70,12 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     isDrawing: boolean;
     startPoint: { x: number; y: number } | fabric.Point | null;
     previewLine: fabric.Line | null;
+    previewRuler: fabric.FabricText | null;
   }>({
     isDrawing: false,
     startPoint: null,
     previewLine: null,
+    previewRuler: null,
   });
 
   useEffect(() => {
@@ -138,7 +141,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       .getObjects()
       .filter((obj) => !(obj as any).isGridGroup)
       .forEach((obj) => {
-        console.log(obj)
+        console.log(obj);
         obj.selectable = select;
         if (mode === "drag") obj.hoverCursor = "grab";
         else if (mode === "select") obj.hoverCursor = "move";
@@ -263,6 +266,18 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         }
       );
       canvas.add(drawRef.current.previewLine);
+      drawRef.current.previewRuler = new fabric.FabricText("0,0 cm", {
+        left: drawRef.current.startPoint.x,
+        top: drawRef.current.startPoint.y - RULER_OFFSET,
+        fontSize: 14,
+        fill: THEME.color.tooltip,
+        originX: "center",
+        originY: "bottom",
+        selectable: false,
+        evented: false,
+        visible: false,
+      });
+      canvas.add(drawRef.current.previewRuler);
     };
 
     const handleMouseMoveDraw = (
@@ -279,6 +294,39 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         x2: endPoint.x,
         y2: endPoint.y,
       });
+
+      if (drawRef.current.previewRuler && drawRef.current.startPoint) {
+        const pixelLength = Math.hypot(
+          endPoint.x - drawRef.current.startPoint?.x,
+          endPoint.y - drawRef.current.startPoint?.y
+        );
+        const cmLength = pixelLength / PIXELS_PER_CM;
+        const getCmText = (lengthInCm: number) => {
+          return `${lengthInCm.toLocaleString("pt-BR", {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          })} cm`;
+        };
+        const getMeterText = (lengthInCm: number) => {
+          return `${(lengthInCm / 100).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })} m`;
+        };
+        const text =
+          cmLength < 100 ? getCmText(cmLength) : getMeterText(cmLength);
+
+        const midX = (drawRef.current.startPoint?.x + endPoint.x) / 2;
+        const midY = (drawRef.current.startPoint?.y + endPoint.y) / 2;
+
+        drawRef.current.previewRuler.set({
+          text: text,
+          left: midX,
+          top: midY - RULER_OFFSET,
+          visible: true,
+        });
+      }
+
       canvas.requestRenderAll();
     };
 
@@ -297,9 +345,15 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
 
       drawRef.current.isDrawing = false;
 
-      if (drawRef.current.previewLine)
+      if (drawRef.current.previewLine) {
         canvas.remove(drawRef.current.previewLine);
-      drawRef.current.previewLine = null;
+        drawRef.current.previewLine = null;
+      }
+
+      if (drawRef.current.previewRuler) {
+        canvas.remove(drawRef.current.previewRuler);
+        drawRef.current.previewRuler = null;
+      }
 
       const pointer = canvas.getScenePoint(e.e);
       const snapPoint = findSnapPoint(canvas, pointer);

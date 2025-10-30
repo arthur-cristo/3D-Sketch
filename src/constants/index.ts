@@ -9,3 +9,5 @@ export const GRID = {
 };
 
 export const SNAP_THRESHOLD = 20;
+export const RULER_OFFSET = 15;
+export const PIXELS_PER_CM = 0.5;
