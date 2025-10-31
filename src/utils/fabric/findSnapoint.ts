@@ -1,6 +1,6 @@
 import type { Canvas, Line, Point as PointType } from "fabric";
 import { Point } from "fabric";
-import { GRID, SNAP_THRESHOLD } from "../../constants";
+import { GRID_SIZE, SNAP_THRESHOLD } from "../../constants";
 
 function findSnapPoint(canvas: Canvas, pointer: PointType) {
   let snappedPoint = null;
@@ -29,8 +29,8 @@ function findSnapPoint(canvas: Canvas, pointer: PointType) {
 
   // 2. If no vertex snap, try to snap to the grid
   if (!snappedPoint) {
-    const snappedX = Math.round(pointer.x / GRID.SIZE) * GRID.SIZE;
-    const snappedY = Math.round(pointer.y / GRID.SIZE) * GRID.SIZE;
+    const snappedX = Math.round(pointer.x / GRID_SIZE) * GRID_SIZE;
+    const snappedY = Math.round(pointer.y / GRID_SIZE) * GRID_SIZE;
 
     // Only snap to grid if we're close enough
     const distGrid = Math.hypot(pointer.x - snappedX, pointer.y - snappedY);

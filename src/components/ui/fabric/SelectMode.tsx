@@ -55,7 +55,7 @@ const SelectMode = () => {
       py={1.5}
       borderRadius="lg"
       gap={2}
-      boxShadow="sm"
+      boxShadow="0px 10px 15px 0px rgba(0,0,0,0.1)"
     >
       <ModeSelector />
     </HStack>

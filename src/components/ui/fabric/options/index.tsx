@@ -31,6 +31,7 @@ const Options = () => {
             zIndex={1}
             borderRadius="lg"
             p={2}
+            boxShadow="0px 10px 15px 0px rgba(0,0,0,0.1)"
           >
             <Icon
               as={GiHamburgerMenu}
