@@ -1,13 +1,12 @@
 export const ZOOM = {
-  MIN_ZOOM: 0.1,
-  MAX_ZOOM: 2,
-  ZOOM_STEP: 0.1,
+  MIN: 0.1,
+  MAX: 2,
+  STEP: 0.1,
 };
 
-export const GRID = {
-  SIZE: 25,
-};
+export const GRID_SIZE = 25; // pixels
 
 export const SNAP_THRESHOLD = 20;
 export const RULER_OFFSET = 15;
-export const PIXELS_PER_CM = 0.5;
+export const SCALES = [20, 25, 50, 75, 100, 125];
+export const WALL_THICKNESS = 0.125; // meters

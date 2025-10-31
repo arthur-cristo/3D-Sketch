@@ -1,12 +1,13 @@
 import { Line, Group, Rect } from "fabric";
 import type { Canvas } from "fabric";
+import { GRID_SIZE } from "../../constants";
 
 export const drawGrid = (
   canvas: Canvas,
   width: number,
   height: number,
   gridColor = "#ddd",
-  screenCellSize = 25
+  screenCellSize = GRID_SIZE
 ) => {
   canvas
     .getObjects()

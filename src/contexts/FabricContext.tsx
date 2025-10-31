@@ -14,7 +14,8 @@ import { resizeCanvas, drawGrid, findSnapPoint } from "../utils/fabric";
 import { useThemeApp } from "./ThemeAppContext";
 import useIsMobile from "../hooks/useIsMobile";
 import type { Modes } from "../types";
-import { PIXELS_PER_CM, RULER_OFFSET } from "../constants";
+import { RULER_OFFSET, WALL_THICKNESS, ZOOM } from "../constants";
+import devicePxPerCm from "../utils/devicePxPerCm";
 
 type CanvasZoom = {
   zoom: number;
@@ -33,6 +34,8 @@ interface FabricContext {
   setShowGrid: Dispatch<SetStateAction<boolean>>;
   worldSize: { width: number; height: number };
   setWorldSize: Dispatch<SetStateAction<{ width: number; height: number }>>;
+  scale: number;
+  setScale: Dispatch<SetStateAction<number>>;
 }
 
 export const FabricContext = createContext<FabricContext>({} as FabricContext);
@@ -47,14 +50,15 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   const [worldSize, setWorldSize] = useState(
     isMobile ? { width: 1080, height: 1920 } : { width: 1920, height: 1080 }
   );
+  const [scale, setScale] = useState(100);
   const { THEME, colorMode } = useThemeApp();
   const canvasZoom: CanvasZoom = {
     zoom,
     decreaseZoom: () => {
-      setZoom((prevZoom) => Math.max(prevZoom - 0.1, 0.1));
+      setZoom((prevZoom) => Math.max(prevZoom - ZOOM.STEP, ZOOM.MIN));
     },
     increaseZoom: () => {
-      setZoom((prevZoom) => Math.min(prevZoom + 0.1, 2));
+      setZoom((prevZoom) => Math.min(prevZoom + ZOOM.STEP, ZOOM.MAX));
     },
     setZoom: (zoom: number) => {
       setZoom(zoom);
@@ -300,7 +304,13 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
           endPoint.x - drawRef.current.startPoint?.x,
           endPoint.y - drawRef.current.startPoint?.y
         );
-        const cmLength = pixelLength / PIXELS_PER_CM;
+        const cmLength = (pixelLength / devicePxPerCm()) * scale;
+        console.log({
+          pixelLength,
+          cmLength,
+          scale,
+          scaleCL: (pixelLength / devicePxPerCm()) * scale,
+        });
         const getCmText = (lengthInCm: number) => {
           return `${lengthInCm.toLocaleString("pt-BR", {
             minimumFractionDigits: 1,
@@ -367,6 +377,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
           endPoint.y - drawRef.current.startPoint?.y
         ) > 0
       ) {
+        const wallThicknessPx =
+          (WALL_THICKNESS * 100 * devicePxPerCm()) / scale;
         const wall = new fabric.Line(
           [
             drawRef.current.startPoint.x,
@@ -376,7 +388,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
           ],
           {
             stroke: THEME.color.primary,
-            strokeWidth: 6 / canvas.getZoom(),
+            strokeWidth: wallThicknessPx,
             selectable: false,
             evented: true,
             originX: "center",
@@ -412,7 +424,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       canvas.off("mouse:move", handleMouseMove);
       canvas.off("mouse:up", handleMouseUp);
     };
-  }, [canvas, mode]);
+  }, [canvas, mode, scale]);
 
   useEffect(() => {
     if (!canvas) return;
@@ -454,6 +466,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         setShowGrid,
         worldSize,
         setWorldSize,
+        scale,
+        setScale,
       }}
     >
       {children}

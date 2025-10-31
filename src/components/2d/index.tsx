@@ -2,7 +2,7 @@ import { Box } from "@chakra-ui/react";
 import { useFabric } from "../../contexts/FabricContext";
 import Zoom from "../ui/fabric/Zoom";
 import SelectMode from "../ui/fabric/SelectMode";
-import Options from "../ui/fabric/Options";
+import Options from "../ui/fabric/options";
 import { useThemeApp } from "../../contexts/ThemeAppContext";
 
 const TwoDimensionCanvas = () => {

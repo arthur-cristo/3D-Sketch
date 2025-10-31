@@ -9,8 +9,8 @@ const ModeSelector = () => {
   const modes: { mode: Modes; label: string }[] = [
     { mode: "select", label: "S" },
     { mode: "draw", label: "D" },
-    { mode: "drag", label: "D" },
-    { mode: "erase", label: "E" },
+    { mode: "drag", label: "A" },
+    { mode: "erase", label: "B" },
   ];
 
   return (

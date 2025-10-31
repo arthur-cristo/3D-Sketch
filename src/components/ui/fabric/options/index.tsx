@@ -1,68 +1,21 @@
 import {
   Box,
   Button,
-  Flex,
   HStack,
   Icon,
   Menu,
   Switch,
   Text,
 } from "@chakra-ui/react";
-import { useFabric } from "../../../contexts/FabricContext";
+import { useFabric } from "../../../../contexts/FabricContext";
 import { GiHamburgerMenu } from "react-icons/gi";
-import { LuComputer, LuMoon, LuSun } from "react-icons/lu";
-import { useThemeApp } from "../../../contexts/ThemeAppContext";
-
-type ThemeModeSelectorProps = {
-  THEME: ReturnType<typeof useThemeApp>["THEME"];
-  themeMode: ReturnType<typeof useThemeApp>["themeMode"];
-  useLightTheme: ReturnType<typeof useThemeApp>["useLightTheme"];
-  useDarkTheme: ReturnType<typeof useThemeApp>["useDarkTheme"];
-  useSystemTheme: ReturnType<typeof useThemeApp>["useSystemTheme"];
-};
-
-const ThemeModeSelector = ({
-  THEME,
-  themeMode,
-  useLightTheme,
-  useDarkTheme,
-  useSystemTheme,
-}: ThemeModeSelectorProps) => {
-  const selectors = [
-    { mode: "light", onClick: useLightTheme, icon: LuSun },
-    { mode: "dark", onClick: useDarkTheme, icon: LuMoon },
-    { mode: "system", onClick: useSystemTheme, icon: LuComputer },
-  ];
-  return (
-    <>
-      {selectors.map(({ mode, onClick, icon }) => (
-        <Flex
-          onClick={onClick}
-          bgColor={themeMode === mode ? THEME.bgColor.cta : "transparent"}
-          _hover={{
-            bgColor:
-              themeMode === mode ? THEME.bgColor.cta : THEME.bgColor.hover,
-          }}
-          py={1}
-          px={2}
-          borderRadius="lg"
-          cursor="pointer"
-        >
-          <Icon
-            as={icon}
-            boxSize={5}
-            color={themeMode === mode ? THEME.color.secondary : THEME.color.cta}
-          />
-        </Flex>
-      ))}
-    </>
-  );
-};
+import { useThemeApp } from "../../../../contexts/ThemeAppContext";
+import ThemeModeSelector from "./ThemeSelector";
+import ScaleSelector from "./ScaleSelector";
 
 const Options = () => {
   const { showGrid, setShowGrid } = useFabric();
-  const { THEME, useLightTheme, useDarkTheme, useSystemTheme, themeMode } =
-    useThemeApp();
+  const { THEME } = useThemeApp();
   return (
     <Box position="absolute" top={5} left={5}>
       <Menu.Root positioning={{ placement: "bottom-start" }}>
@@ -91,13 +44,32 @@ const Options = () => {
             bgColor={THEME.bgColor.primary}
             borderRadius="lg"
             boxShadow="sm"
-            w="20rem"
+            w="22rem"
           >
             <Menu.ItemGroup>
               <Menu.Item
-                value="show_grid"
-                _hover={{ bgColor: "transparent" }}
+                value="scale"
+                _highlighted={{ bgColor: "transparent" }}
                 closeOnSelect={false}
+              >
+                <HStack justify="space-between" w="100%">
+                  <Text fontSize="lg">Escala</Text>
+                  <HStack
+                    gap={2}
+                    py={1}
+                    px={2}
+                    borderRadius="lg"
+                    border="0.1rem solid"
+                    borderColor={THEME.borderColor.separator}
+                  >
+                    <ScaleSelector />
+                  </HStack>
+                </HStack>
+              </Menu.Item>
+              <Menu.Item
+                value="show_grid"
+                closeOnSelect={false}
+                _highlighted={{ bgColor: "transparent" }}
               >
                 <HStack justify="space-between" w="100%">
                   <Text fontSize="lg">Mostrar Grade</Text>
@@ -117,9 +89,12 @@ const Options = () => {
                   </Switch.Root>
                 </HStack>
               </Menu.Item>
+            </Menu.ItemGroup>
+            <Menu.Separator bgColor={THEME.borderColor.separator} />
+            <Menu.ItemGroup>
               <Menu.Item
                 value="toggle_grid"
-                _hover={{ bgColor: "transparent" }}
+                _highlighted={{ bgColor: "transparent" }}
                 closeOnSelect={false}
               >
                 <HStack justify="space-between" w="100%">
@@ -132,13 +107,7 @@ const Options = () => {
                     border="0.1rem solid"
                     borderColor={THEME.borderColor.separator}
                   >
-                    <ThemeModeSelector
-                      THEME={THEME}
-                      themeMode={themeMode}
-                      useLightTheme={useLightTheme}
-                      useDarkTheme={useDarkTheme}
-                      useSystemTheme={useSystemTheme}
-                    />
+                    <ThemeModeSelector />
                   </HStack>
                 </HStack>
               </Menu.Item>
