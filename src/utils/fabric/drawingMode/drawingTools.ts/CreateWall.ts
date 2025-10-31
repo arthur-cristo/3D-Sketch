@@ -1,4 +1,4 @@
-import { Line } from "fabric";
+import { Circle, Line, Rect } from "fabric";
 
 export class CreateWall {
   startPointX: number;
@@ -7,6 +7,7 @@ export class CreateWall {
   endPointY: number;
   wallColor: string;
   wallWidth: number;
+  drawObject: "rectangle" | "line" | "circle";
 
   constructor(
     startPointX: number,
@@ -14,7 +15,8 @@ export class CreateWall {
     endPointX: number,
     endPointY: number,
     wallColor: string,
-    wallWidth: number
+    wallWidth: number,
+    drawObject: "rectangle" | "line" | "circle"
   ) {
     this.startPointX = startPointX;
     this.startPointY = startPointY;
@@ -22,9 +24,10 @@ export class CreateWall {
     this.endPointY = endPointY;
     this.wallColor = wallColor;
     this.wallWidth = wallWidth;
+    this.drawObject = drawObject;
   }
 
-  line() {
+  line(): Line {
     return new Line(
       [this.startPointX, this.startPointY, this.endPointX, this.endPointY],
       {
@@ -37,5 +40,13 @@ export class CreateWall {
         data: { isWall: true },
       }
     );
+  }
+
+  rectangle(): Rect {
+    return new Rect();
+  }
+
+  circle(): Circle {
+    return new Circle();
   }
 }

@@ -141,46 +141,57 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!canvas) return;
     setMouse(mode, canvas);
-    canvas.on("mouse:wheel", (opt) => handleMouseWheel(opt, canvas, setZoom));
-    if (mode !== "drag") return;
-    canvas.on("mouse:down", (opt) => handleMouseDown(opt, dragRef, canvas));
-    canvas.on("mouse:move", (opt) => handleMouseMove(opt, dragRef, canvas));
-    canvas.on("mouse:up", () => handleMouseUp(dragRef, canvas));
+
+    const removeWheel = canvas.on("mouse:wheel", (opt) =>
+      handleMouseWheel(opt, canvas, setZoom)
+    );
+
+    let removeDown: VoidFunction | undefined;
+    let removeMove: VoidFunction | undefined;
+    let removeUp: VoidFunction | undefined;
+
+    if (mode === "drag") {
+      removeDown = canvas.on("mouse:down", (opt) =>
+        handleMouseDown(opt, dragRef, canvas)
+      );
+      removeMove = canvas.on("mouse:move", (opt) =>
+        handleMouseMove(opt, dragRef, canvas)
+      );
+      removeUp = canvas.on("mouse:up", () => handleMouseUp(dragRef, canvas));
+    }
 
     return () => {
-      canvas.off("mouse:wheel", (opt) =>
-        handleMouseWheel(opt, canvas, setZoom)
-      );
-      canvas.off("mouse:down", (opt) => handleMouseDown(opt, dragRef, canvas));
-      canvas.off("mouse:move", (opt) => handleMouseMove(opt, dragRef, canvas));
-      canvas.off("mouse:up", () => handleMouseUp(dragRef, canvas));
+      removeWheel();
+      removeDown?.();
+      removeMove?.();
+      removeUp?.();
     };
   }, [canvas, mode]);
 
   // Controls drawing mode
   useEffect(() => {
     if (!canvas || mode !== "draw") return;
-
-    canvas.on("mouse:down", (opt) =>
+    const removeDown = canvas.on("mouse:down", (opt) =>
       handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip, scale)
     );
-    canvas.on("mouse:move", (opt) =>
+    const removeMove = canvas.on("mouse:move", (opt) =>
       handleMouseMoveDraw(opt, canvas, drawRef, scale)
     );
-    canvas.on("mouse:up", (opt) =>
-      handleMouseUpDraw(opt, canvas, drawRef, THEME.color.primary, scale)
+    const removeUp = canvas.on("mouse:up", (opt) =>
+      handleMouseUpDraw(
+        opt,
+        canvas,
+        drawRef,
+        THEME.color.primary,
+        scale,
+        drawObject
+      )
     );
 
     return () => {
-      canvas.off("mouse:down", (opt) =>
-        handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip, scale)
-      );
-      canvas.off("mouse:move", (opt) =>
-        handleMouseMoveDraw(opt, canvas, drawRef, scale)
-      );
-      canvas.off("mouse:up", (opt) =>
-        handleMouseUpDraw(opt, canvas, drawRef, THEME.color.primary, scale)
-      );
+      removeDown();
+      removeMove();
+      removeUp();
     };
   }, [canvas, mode, scale, drawObject]);
 
@@ -194,6 +205,10 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     }
     canvas.requestRenderAll();
   }, [canvas, showGrid]);
+
+  useEffect(() => {
+    console.log(mode, drawObject);
+  }, [mode, drawObject]);
 
   useEffect(() => {
     if (!canvas) return;

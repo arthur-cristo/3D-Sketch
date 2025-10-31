@@ -1,6 +1,6 @@
 import * as fabric from "fabric";
 import findSnapPoint from "../findSnapoint";
-import type { DrawRef } from "../../../types";
+import type { DrawObjects, DrawRef } from "../../../types";
 import {
   RULER_OFFSET,
   RULER_TEXT_FONT_SIZE,
@@ -95,7 +95,8 @@ export const handleMouseUpDraw = (
   canvas: fabric.Canvas,
   drawRef: React.RefObject<DrawRef>,
   wallColor: string,
-  scale: number
+  scale: number,
+  drawObjects: DrawObjects
 ) => {
   if (!drawRef.current.isDrawing || !e.viewportPoint) {
     if (drawRef.current.previewLine) {
@@ -131,17 +132,29 @@ export const handleMouseUpDraw = (
       endPoint.y - drawRef.current.startPoint?.y
     ) > 0
   ) {
-    const wallThicknessPx = (WALL_THICKNESS * 100 * devicePxPerCm()) / scale;
-    const createWall = new CreateWall(
-      drawRef.current.startPoint.x,
-      drawRef.current.startPoint.y,
-      endPoint.x,
-      endPoint.y,
-      wallColor,
-      wallThicknessPx
-    );
-    const wall = createWall.line();
-    canvas.add(wall);
+    if (drawObjects === "ruler") {
+    } else if (["rectangle", "line", "circle"].includes(drawObjects || "")) {
+      const wallThicknessPx = (WALL_THICKNESS * 100 * devicePxPerCm()) / scale;
+      const createWall = new CreateWall(
+        drawRef.current.startPoint.x,
+        drawRef.current.startPoint.y,
+        endPoint.x,
+        endPoint.y,
+        wallColor,
+        wallThicknessPx,
+        drawObjects as "rectangle" | "line" | "circle"
+      );
+      if (drawObjects === "line") {
+        const wall = createWall.line();
+        canvas.add(wall);
+      } else if (drawObjects === "rectangle") {
+        const wall = createWall.rectangle();
+        canvas.add(wall);
+      } else if (drawObjects === "circle") {
+        const wall = createWall.circle();
+        canvas.add(wall);
+      }
+    }
   }
 
   drawRef.current.startPoint = null;

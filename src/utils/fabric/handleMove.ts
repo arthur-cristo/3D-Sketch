@@ -123,15 +123,4 @@ export const setMouse = (mode: Modes, canvas: fabric.Canvas) => {
     canvas.defaultCursor = "default";
     canvas.hoverCursor = "default";
   }
-
-  canvas
-    .getObjects()
-    .filter((obj) => !(obj as any).isGridGroup)
-    .forEach((obj) => {
-      console.log(obj);
-      obj.selectable = select;
-      if (mode === "drag") obj.hoverCursor = "grab";
-      else if (mode === "select") obj.hoverCursor = "move";
-      else obj.hoverCursor = "crosshair";
-    });
 };
