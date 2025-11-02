@@ -1,4 +1,4 @@
-import { Flex, HStack, Icon, Text } from "@chakra-ui/react";
+import { Box, Flex, HStack, Icon, Text } from "@chakra-ui/react";
 import { useFabric } from "../../../contexts/FabricContext";
 import { useThemeApp } from "../../../contexts/ThemeAppContext";
 import {
@@ -20,7 +20,7 @@ const ModeSelector = () => {
   const { THEME } = useThemeApp();
   const modes: {
     mode: Modes;
-    drawObject?: DrawObjects;
+    drawObject?: DrawObjects["type"];
     icon: IconType;
     key?: string;
     tooltip?: string;
@@ -63,13 +63,13 @@ const ModeSelector = () => {
       {modes.map((m) => {
         const isActive =
           mode === m.mode &&
-          (m.drawObject ? drawObject === m.drawObject : true);
+          (m.drawObject ? drawObject.type === m.drawObject : true);
         const Selector = (
           <Flex
             key={m.mode + m.drawObject}
             onClick={() => {
               setMode(m.mode);
-              setDrawObject(m.drawObject ?? null);
+              setDrawObject({type: m.drawObject});
             }}
             w="2.5rem"
             h="2.5rem"
@@ -100,7 +100,7 @@ const ModeSelector = () => {
           </Flex>
         );
         return (
-          <>
+          <Box key={m.mode + m.drawObject}>
             {m.tooltip ? (
               <Tooltip content={m.tooltip} showArrow>
                 {Selector}
@@ -108,7 +108,7 @@ const ModeSelector = () => {
             ) : (
               Selector
             )}
-          </>
+          </Box>
         );
       })}
     </>

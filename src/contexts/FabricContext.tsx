@@ -14,7 +14,7 @@ import { resizeCanvas, drawGrid } from "../utils/fabric";
 import { useThemeApp } from "./ThemeAppContext";
 import useIsMobile from "../hooks/useIsMobile";
 import type { DrawObjects, DrawRef, Modes } from "../types";
-import { DEFAULT_WORLD_SIZE, ZOOM } from "../constants";
+import { DEFAULT_WORLD_SIZE, WALL_THICKNESS, ZOOM } from "../constants";
 import {
   handleMouseDown,
   handleMouseMove,
@@ -53,7 +53,7 @@ interface FabricContext {
   scale: number;
   setScale: Dispatch<SetStateAction<number>>;
   drawObject: DrawObjects;
-  setDrawObject: Dispatch<SetStateAction<DrawObjects>>;
+  setDrawObject: (obj: Partial<DrawObjects>) => void;
 }
 
 export const FabricContext = createContext<FabricContext>({} as FabricContext);
@@ -64,13 +64,21 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
   const [zoom, setZoom] = useState(1);
   const [showGrid, setShowGrid] = useState(true);
-  const [drawObject, setDrawObject] = useState<DrawObjects>(null);
   const isMobile = useIsMobile();
   const [worldSize, setWorldSize] = useState(
     isMobile ? DEFAULT_WORLD_SIZE.MOBILE : DEFAULT_WORLD_SIZE.DESKTOP
   );
   const [scale, setScale] = useState(100);
   const { THEME, colorMode } = useThemeApp();
+
+  const [drawObject, _setDrawObject] = useState<DrawObjects>({
+    type: null,
+    color: THEME.color.primary,
+    thickness: WALL_THICKNESS.fabric.medium,
+  });
+  const setDrawObject = (obj: Partial<DrawObjects>) => {
+    _setDrawObject((prev) => ({ ...prev, ...obj }));
+  };
 
   const decreaseZoom = () => {
     setZoom((prevZoom) => Math.max(prevZoom - ZOOM.STEP, ZOOM.MIN));
@@ -136,16 +144,16 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         setMode("select");
       } else if (e.key === "2") {
         setMode("draw");
-        setDrawObject("line");
+        setDrawObject({ type: "line" });
       } else if (e.key === "3") {
         setMode("draw");
-        setDrawObject("rectangle");
+        setDrawObject({ type: "rectangle" });
       } else if (e.key === "4") {
         setMode("draw");
-        setDrawObject("circle");
+        setDrawObject({ type: "circle" });
       } else if (e.key === "5") {
         setMode("draw");
-        setDrawObject("ruler");
+        setDrawObject({ type: "ruler" });
       }
     };
     window.addEventListener("keydown", (e) => {
@@ -217,7 +225,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!canvas || mode !== "draw") return;
     const removeDown = canvas.on("mouse:down", (opt) =>
-      handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip)
+      handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip, drawObject)
     );
     const removeMove = canvas.on("mouse:move", (opt) =>
       handleMouseMoveDraw(opt, canvas, drawRef, scale)
@@ -251,10 +259,6 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     }
     canvas.requestRenderAll();
   }, [canvas, showGrid]);
-
-  useEffect(() => {
-    console.log(mode, drawObject);
-  }, [mode, drawObject]);
 
   useEffect(() => {
     if (!canvas) return;

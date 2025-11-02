@@ -9,21 +9,51 @@ function findSnapPoint(canvas: Canvas, pointer: PointType) {
   const walls = canvas.getObjects().filter((obj) => (obj as any).data?.isWall);
 
   for (const wall of walls) {
-    // calcLinePoints() gives absolute canvas coordinates for endpoints
-    const points = (wall as Line).calcLinePoints();
+    const wallType = (wall as any).data?.type;
 
-    // Check endpoint 1 (x1, y1)
-    const dist1 = Math.hypot(pointer.x - points.x1, pointer.y - points.y1);
-    if (dist1 < SNAP_THRESHOLD) {
-      snappedPoint = new Point(points.x1, points.y1);
-      break;
-    }
+    // --- FIX: Check the type of wall ---
 
-    // Check endpoint 2 (x2, y2)
-    const dist2 = Math.hypot(pointer.x - points.x2, pointer.y - points.y2);
-    if (dist2 < SNAP_THRESHOLD) {
-      snappedPoint = new Point(points.x2, points.y2);
-      break;
+    if (wallType === "line") {
+      // --- Handle Lines ---
+      // calcLinePoints() gives absolute canvas coordinates for endpoints
+      const points = (wall as Line).calcLinePoints();
+
+      // Check endpoint 1 (x1, y1)
+      const dist1 = Math.hypot(pointer.x - points.x1, pointer.y - points.y1);
+      if (dist1 < SNAP_THRESHOLD) {
+        snappedPoint = new Point(points.x1, points.y1);
+        break;
+      }
+
+      // Check endpoint 2 (x2, y2)
+      const dist2 = Math.hypot(pointer.x - points.x2, pointer.y - points.y2);
+      if (dist2 < SNAP_THRESHOLD) {
+        snappedPoint = new Point(points.x2, points.y2);
+        break;
+      }
+    } else if (wallType === "rectangle") {
+      // --- Handle Rectangles ---
+      // oCoords holds the absolute coordinates of the 4 corners
+      const { tl, tr, bl, br } = wall.oCoords;
+      const points = [tl, tr, bl, br];
+
+      for (const point of points) {
+        const dist = Math.hypot(pointer.x - point.x, pointer.y - point.y);
+        if (dist < SNAP_THRESHOLD) {
+          snappedPoint = new Point(point.x, point.y);
+          break;
+        }
+      }
+      if (snappedPoint) break;
+    } else if (wallType === "circle") {
+      // --- Handle Circles ---
+      // For a circle, let's just snap to its center
+      const center = wall.getCenterPoint();
+      const dist = Math.hypot(pointer.x - center.x, pointer.y - center.y);
+      if (dist < SNAP_THRESHOLD) {
+        snappedPoint = new Point(center.x, center.y);
+        break;
+      }
     }
   }
 

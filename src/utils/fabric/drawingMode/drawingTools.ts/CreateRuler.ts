@@ -1,5 +1,4 @@
-import { FabricText, Line } from "fabric";
-import { RULER_OFFSET } from "../../../../constants";
+import { Ellipse, FabricText, Line, Rect } from "fabric";
 
 export class CreateRuler {
   startPointX: number;
@@ -25,7 +24,7 @@ export class CreateRuler {
   text() {
     return new FabricText("0,0 cm", {
       left: this.startPointX,
-      top: this.startPointY - RULER_OFFSET,
+      top: this.startPointY,
       fontSize: this.fontSize,
       fill: this.fill,
       originX: "center",
@@ -48,5 +47,38 @@ export class CreateRuler {
         data: { type: "ruler", color: this.fill },
       }
     );
+  }
+  rect() {
+    return new Rect({
+      left: this.startPointX,
+      top: this.startPointY,
+      width: 0,
+      height: 0,
+      fill: "transparent",
+      stroke: this.fill,
+      strokeWidth: this.strokeWidth,
+      strokeDashArray: [5, 5],
+      selectable: false,
+      evented: false,
+      data: { type: "ruler", color: this.fill },
+    });
+  }
+
+  ellipse() {
+    return new Ellipse({
+      left: this.startPointX,
+      top: this.startPointY,
+      rx: 0,
+      ry: 0,
+      stroke: this.fill,
+      originX: "center",
+      originY: "center",
+      strokeWidth: this.strokeWidth,
+      strokeDashArray: [5, 5],
+      fill: "transparent",
+      selectable: false,
+      evented: false,
+      data: { type: "ruler", color: this.fill },
+    });
   }
 }

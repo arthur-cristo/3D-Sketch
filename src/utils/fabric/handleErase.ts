@@ -19,11 +19,10 @@ export const handleMouseOverErase = (opt: Opt, canvas: Canvas) => {
     objects = [target];
   }
   objects.forEach((obj) => {
-    console.log("obj", obj);
     if (!obj) return;
 
     if (obj.stroke) obj.set("stroke", "red");
-    if (obj.fill) obj.set("fill", "red");
+    if (obj.fill && obj.fill !== "transparent") obj.set("fill", "red");
   });
 
   canvas.requestRenderAll();
@@ -41,12 +40,11 @@ export const handleMouseOutErase = (opt: Opt, canvas: Canvas) => {
   }
 
   objects.forEach((obj) => {
-    console.log("obj", obj);
     if (!obj || !(obj as any).data) return;
 
     const originalColor = (obj as any).data.color;
     if (obj.stroke) obj.set("stroke", originalColor);
-    if (obj.fill) obj.set("fill", originalColor);
+    if (obj.fill && obj.fill !== "transparent") obj.set("fill", originalColor);
   });
 
   canvas.requestRenderAll();

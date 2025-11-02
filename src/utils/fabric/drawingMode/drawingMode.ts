@@ -9,13 +9,17 @@ import {
 } from "../../../constants";
 import { CreateRuler } from "./drawingTools.ts/CreateRuler";
 import { CreateWall } from "./drawingTools.ts/CreateWall";
-import { getDistanceFromPixels } from "../../getDistanceFromPixeis";
+import {
+  getAreaFromPixels,
+  getLengthFromPixels,
+} from "../../getDistanceFromPixels";
 
 export const handleMouseDownDraw = (
   e: fabric.TPointerEventInfo<fabric.TPointerEvent>,
   canvas: fabric.Canvas,
   drawRef: React.RefObject<DrawRef>,
-  tooltipColor: string
+  tooltipColor: string,
+  drawObjects: DrawObjects
 ) => {
   if (!e.viewportPoint) return;
 
@@ -31,8 +35,18 @@ export const handleMouseDownDraw = (
     tooltipColor,
     RULER_THICKNESS
   );
-  drawRef.current.previewLine = createRuler.line();
-  canvas.add(drawRef.current.previewLine);
+  let previewObject: fabric.Object | null = null;
+  if (drawObjects.type === "line" || drawObjects.type === "ruler") {
+    previewObject = createRuler.line();
+    drawRef.current.previewLine = previewObject as fabric.Line;
+  } else if (drawObjects.type === "rectangle") {
+    previewObject = createRuler.rect();
+    drawRef.current.previewSquare = previewObject as fabric.Rect;
+  } else if (drawObjects.type === "circle") {
+    previewObject = createRuler.ellipse();
+    drawRef.current.previewCircle = previewObject as fabric.Ellipse;
+  }
+  if (previewObject) canvas.add(previewObject);
   drawRef.current.previewRuler = createRuler.text();
   canvas.add(drawRef.current.previewRuler);
 };
@@ -44,31 +58,105 @@ export const handleMouseMoveDraw = (
   scale: number
 ) => {
   if (!e.viewportPoint || !drawRef.current.isDrawing) return;
+  const startPoint = drawRef.current.startPoint;
   const pointer = canvas.getScenePoint(e.e);
   const snapPoint = findSnapPoint(canvas, pointer);
 
   const endPoint = snapPoint || pointer;
 
-  drawRef.current.previewLine?.set({
-    x2: endPoint.x,
-    y2: endPoint.y,
-  });
+  if (drawRef.current.previewLine) {
+    drawRef.current.previewLine.set({
+      x2: endPoint.x,
+      y2: endPoint.y,
+    });
+  } else if (drawRef.current.previewSquare) {
+    if (!startPoint) return;
+    const left = Math.min(startPoint.x, endPoint.x);
+    const top = Math.min(startPoint.y, endPoint.y);
+    const width = Math.abs(startPoint.x - endPoint.x);
+    const height = Math.abs(startPoint.y - endPoint.y);
+
+    drawRef.current.previewSquare.set({
+      left: left,
+      top: top,
+      width: width,
+      height: height,
+    });
+  } else if (drawRef.current.previewCircle) {
+    if (!startPoint) return;
+    if (e.e.shiftKey) {
+      const radius = Math.hypot(
+        endPoint.x - startPoint.x,
+        endPoint.y - startPoint.y
+      );
+
+      drawRef.current.previewCircle.set({
+        left: startPoint.x,
+        top: startPoint.y,
+        rx: radius,
+        ry: radius,
+        visible: true,
+      });
+    } else {
+      const width = Math.abs(endPoint.x - startPoint.x);
+      const height = Math.abs(endPoint.y - startPoint.y);
+      const rx = width / 2;
+      const ry = height / 2;
+      const left = Math.min(startPoint.x, endPoint.x) + rx;
+      const top = Math.min(startPoint.y, endPoint.y) + ry;
+
+      drawRef.current.previewCircle.set({
+        left: left,
+        top: top,
+        rx: rx,
+        ry: ry,
+        visible: true,
+      });
+    }
+  }
 
   if (drawRef.current.previewRuler && drawRef.current.startPoint) {
-    const pixelLength = Math.hypot(
-      endPoint.x - drawRef.current.startPoint?.x,
-      endPoint.y - drawRef.current.startPoint?.y
-    );
+    let text = "";
+    if (drawRef.current.previewLine) {
+      const length = Math.hypot(
+        endPoint.x - drawRef.current.startPoint?.x,
+        endPoint.y - drawRef.current.startPoint?.y
+      );
+      text = getLengthFromPixels(length, scale);
+    } else if (drawRef.current.previewSquare) {
+      const width = Math.abs(endPoint.x - drawRef.current.startPoint.x);
+      const height = Math.abs(endPoint.y - drawRef.current.startPoint.y);
+      text =
+        width * height > 0
+          ? getAreaFromPixels(width * height, scale)
+          : getLengthFromPixels(width + height, scale);
+    } else if (drawRef.current.previewCircle) {
+      if (e.e.shiftKey) {
+        const radius = Math.hypot(
+          endPoint.x - drawRef.current.startPoint.x,
+          endPoint.y - drawRef.current.startPoint.y
+        );
+        text = getAreaFromPixels(Math.PI * radius * radius, scale);
+      } else {
+        const rx = Math.abs(endPoint.x - drawRef.current.startPoint.x) / 2;
+        const ry = Math.abs(endPoint.y - drawRef.current.startPoint.y) / 2;
+        text = getAreaFromPixels(Math.PI * rx * ry, scale);
+      }
+    }
 
-    const text = getDistanceFromPixels(pixelLength, scale);
-
-    const midX = (drawRef.current.startPoint?.x + endPoint.x) / 2;
-    const midY = (drawRef.current.startPoint?.y + endPoint.y) / 2;
-
+    const deltaX = endPoint.x - drawRef.current.startPoint.x;
+    const deltaY = endPoint.y - drawRef.current.startPoint.y;
+    const isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
+    const isLine = drawRef.current.previewLine!!;
+    const marginBottom = isHorizontal && isLine ? -RULER_OFFSET : 0;
+    const marginLeft = !isHorizontal && isLine ? RULER_OFFSET * 2 : 0;
+    const midX = (drawRef.current.startPoint?.x + endPoint.x) / 2 + marginLeft;
+    const midY =
+      (drawRef.current.startPoint?.y + endPoint.y) / 2 + marginBottom;
     drawRef.current.previewRuler.set({
       text: text,
       left: midX,
-      top: midY - RULER_OFFSET,
+      top: midY,
       visible: true,
     });
   }
@@ -100,6 +188,12 @@ export const handleMouseUpDraw = (
   if (drawRef.current.previewLine) {
     canvas.remove(drawRef.current.previewLine);
     drawRef.current.previewLine = null;
+  } else if (drawRef.current.previewSquare) {
+    canvas.remove(drawRef.current.previewSquare);
+    drawRef.current.previewSquare = null;
+  } else if (drawRef.current.previewCircle) {
+    canvas.remove(drawRef.current.previewCircle);
+    drawRef.current.previewCircle = null;
   }
 
   if (drawRef.current.previewRuler) {
@@ -119,7 +213,7 @@ export const handleMouseUpDraw = (
       endPoint.y - drawRef.current.startPoint?.y
     ) > 0
   ) {
-    if (drawObjects === "ruler") {
+    if (drawObjects.type === "ruler") {
       const createRuler = new CreateRuler(
         drawRef.current.startPoint.x,
         drawRef.current.startPoint.y,
@@ -140,15 +234,21 @@ export const handleMouseUpDraw = (
         endPoint.y - drawRef.current.startPoint.y
       );
 
-      const text = getDistanceFromPixels(pixelLength, scale);
+      const text = getLengthFromPixels(pixelLength, scale);
 
-      const midX = (drawRef.current.startPoint.x + endPoint.x) / 2;
-      const midY = (drawRef.current.startPoint.y + endPoint.y) / 2;
-
+      const deltaX = endPoint.x - drawRef.current.startPoint.x;
+      const deltaY = endPoint.y - drawRef.current.startPoint.y;
+      const isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
+      const marginBottom = isHorizontal ? -RULER_OFFSET : 0;
+      const marginLeft = !isHorizontal ? RULER_OFFSET * 2 : 0;
+      const midX =
+        (drawRef.current.startPoint?.x + endPoint.x) / 2 + marginLeft;
+      const midY =
+        (drawRef.current.startPoint?.y + endPoint.y) / 2 + marginBottom;
       rulerText.set({
         text: text,
         left: midX,
-        top: midY - RULER_OFFSET,
+        top: midY,
         visible: true,
       });
       const ruler = new fabric.Group([rulerLine, rulerText], {
@@ -156,7 +256,9 @@ export const handleMouseUpDraw = (
         evented: true,
       });
       canvas.add(ruler);
-    } else if (["rectangle", "line", "circle"].includes(drawObjects || "")) {
+    } else if (
+      ["rectangle", "line", "circle"].includes(drawObjects.type || "")
+    ) {
       const createWall = new CreateWall(
         drawRef.current.startPoint.x,
         drawRef.current.startPoint.y,
@@ -164,15 +266,17 @@ export const handleMouseUpDraw = (
         endPoint.y,
         wallColor,
         WALL_THICKNESS.fabric.medium,
-        drawObjects as "rectangle" | "line" | "circle"
+        drawObjects.type as "rectangle" | "line" | "circle"
       );
       let wall;
-      if (drawObjects === "line") {
+      if (drawObjects.type === "line") {
         wall = createWall.line();
-      } else if (drawObjects === "rectangle") {
+      } else if (drawObjects.type === "rectangle") {
         wall = createWall.rectangle();
-      } else if (drawObjects === "circle") {
+      } else if (e.e.shiftKey) {
         wall = createWall.circle();
+      } else {
+        wall = createWall.ellipse();
       }
       canvas.add(wall as fabric.Object);
     }
