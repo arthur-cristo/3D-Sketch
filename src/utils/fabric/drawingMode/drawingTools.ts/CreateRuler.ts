@@ -33,6 +33,7 @@ export class CreateRuler {
       selectable: false,
       evented: false,
       visible: false,
+      data: { type: "ruler", color: this.fill },
     });
   }
   line() {
@@ -44,6 +45,7 @@ export class CreateRuler {
         strokeDashArray: [5, 5],
         selectable: false,
         evented: false,
+        data: { type: "ruler", color: this.fill },
       }
     );
   }

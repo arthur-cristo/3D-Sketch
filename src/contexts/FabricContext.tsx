@@ -217,7 +217,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!canvas || mode !== "draw") return;
     const removeDown = canvas.on("mouse:down", (opt) =>
-      handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip, scale)
+      handleMouseDownDraw(opt, canvas, drawRef, THEME.color.tooltip)
     );
     const removeMove = canvas.on("mouse:move", (opt) =>
       handleMouseMoveDraw(opt, canvas, drawRef, scale)
@@ -228,6 +228,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         canvas,
         drawRef,
         THEME.color.primary,
+        THEME.color.tooltip,
         scale,
         drawObject
       )

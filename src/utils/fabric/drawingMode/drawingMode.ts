@@ -4,18 +4,18 @@ import type { DrawObjects, DrawRef } from "../../../types";
 import {
   RULER_OFFSET,
   RULER_TEXT_FONT_SIZE,
+  RULER_THICKNESS,
   WALL_THICKNESS,
 } from "../../../constants";
 import { CreateRuler } from "./drawingTools.ts/CreateRuler";
-import devicePxPerCm from "../../devicePxPerCm";
 import { CreateWall } from "./drawingTools.ts/CreateWall";
+import { getDistanceFromPixels } from "../../getDistanceFromPixeis";
 
 export const handleMouseDownDraw = (
   e: fabric.TPointerEventInfo<fabric.TPointerEvent>,
   canvas: fabric.Canvas,
   drawRef: React.RefObject<DrawRef>,
-  tooltipColor: string,
-  scale: number
+  tooltipColor: string
 ) => {
   if (!e.viewportPoint) return;
 
@@ -24,13 +24,12 @@ export const handleMouseDownDraw = (
   const snapPoint = findSnapPoint(canvas, pointer);
 
   drawRef.current.startPoint = snapPoint || pointer;
-  const strokeWidth = (WALL_THICKNESS * 100 * devicePxPerCm()) / scale;
   const createRuler = new CreateRuler(
     drawRef.current.startPoint.x,
     drawRef.current.startPoint.y,
     RULER_TEXT_FONT_SIZE,
     tooltipColor,
-    strokeWidth
+    RULER_THICKNESS
   );
   drawRef.current.previewLine = createRuler.line();
   canvas.add(drawRef.current.previewLine);
@@ -60,21 +59,8 @@ export const handleMouseMoveDraw = (
       endPoint.x - drawRef.current.startPoint?.x,
       endPoint.y - drawRef.current.startPoint?.y
     );
-    const cmLength = (pixelLength / devicePxPerCm()) * scale;
 
-    const getCmText = (lengthInCm: number) => {
-      return `${lengthInCm.toLocaleString("pt-BR", {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      })} cm`;
-    };
-    const getMeterText = (lengthInCm: number) => {
-      return `${(lengthInCm / 100).toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })} m`;
-    };
-    const text = cmLength < 100 ? getCmText(cmLength) : getMeterText(cmLength);
+    const text = getDistanceFromPixels(pixelLength, scale);
 
     const midX = (drawRef.current.startPoint?.x + endPoint.x) / 2;
     const midY = (drawRef.current.startPoint?.y + endPoint.y) / 2;
@@ -95,6 +81,7 @@ export const handleMouseUpDraw = (
   canvas: fabric.Canvas,
   drawRef: React.RefObject<DrawRef>,
   wallColor: string,
+  tooltipColor: string,
   scale: number,
   drawObjects: DrawObjects
 ) => {
@@ -133,27 +120,61 @@ export const handleMouseUpDraw = (
     ) > 0
   ) {
     if (drawObjects === "ruler") {
+      const createRuler = new CreateRuler(
+        drawRef.current.startPoint.x,
+        drawRef.current.startPoint.y,
+        RULER_TEXT_FONT_SIZE,
+        tooltipColor,
+        RULER_THICKNESS
+      );
+      const rulerLine = createRuler.line();
+      const rulerText = createRuler.text();
+
+      rulerLine.set({
+        x2: endPoint.x,
+        y2: endPoint.y,
+      });
+
+      const pixelLength = Math.hypot(
+        endPoint.x - drawRef.current.startPoint.x,
+        endPoint.y - drawRef.current.startPoint.y
+      );
+
+      const text = getDistanceFromPixels(pixelLength, scale);
+
+      const midX = (drawRef.current.startPoint.x + endPoint.x) / 2;
+      const midY = (drawRef.current.startPoint.y + endPoint.y) / 2;
+
+      rulerText.set({
+        text: text,
+        left: midX,
+        top: midY - RULER_OFFSET,
+        visible: true,
+      });
+      const ruler = new fabric.Group([rulerLine, rulerText], {
+        selectable: false,
+        evented: true,
+      });
+      canvas.add(ruler);
     } else if (["rectangle", "line", "circle"].includes(drawObjects || "")) {
-      const wallThicknessPx = (WALL_THICKNESS * 100 * devicePxPerCm()) / scale;
       const createWall = new CreateWall(
         drawRef.current.startPoint.x,
         drawRef.current.startPoint.y,
         endPoint.x,
         endPoint.y,
         wallColor,
-        wallThicknessPx,
+        WALL_THICKNESS.fabric.medium,
         drawObjects as "rectangle" | "line" | "circle"
       );
+      let wall;
       if (drawObjects === "line") {
-        const wall = createWall.line();
-        canvas.add(wall);
+        wall = createWall.line();
       } else if (drawObjects === "rectangle") {
-        const wall = createWall.rectangle();
-        canvas.add(wall);
+        wall = createWall.rectangle();
       } else if (drawObjects === "circle") {
-        const wall = createWall.circle();
-        canvas.add(wall);
+        wall = createWall.circle();
       }
+      canvas.add(wall as fabric.Object);
     }
   }
 
