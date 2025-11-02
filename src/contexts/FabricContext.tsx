@@ -27,6 +27,11 @@ import {
   handleMouseMoveDraw,
   handleMouseUpDraw,
 } from "../utils/fabric/drawingMode/drawingMode";
+import {
+  handleMouseDownErase,
+  handleMouseOutErase,
+  handleMouseOverErase,
+} from "../utils/fabric/handleErase";
 
 type CanvasZoom = {
   zoom: number;
@@ -149,6 +154,8 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     let removeDown: VoidFunction | undefined;
     let removeMove: VoidFunction | undefined;
     let removeUp: VoidFunction | undefined;
+    let mouseOver: VoidFunction | undefined;
+    let mouseOut: VoidFunction | undefined;
 
     if (mode === "drag") {
       removeDown = canvas.on("mouse:down", (opt) =>
@@ -160,11 +167,25 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       removeUp = canvas.on("mouse:up", () => handleMouseUp(dragRef, canvas));
     }
 
+    if (mode === "erase") {
+      removeDown = canvas.on("mouse:down", (opt) =>
+        handleMouseDownErase(opt, canvas)
+      );
+      mouseOver = canvas.on("mouse:over", (opt) =>
+        handleMouseOverErase(opt, canvas)
+      );
+      mouseOut = canvas.on("mouse:out", (opt) =>
+        handleMouseOutErase(opt, canvas)
+      );
+    }
+
     return () => {
       removeWheel();
       removeDown?.();
       removeMove?.();
       removeUp?.();
+      mouseOver?.();
+      mouseOut?.();
     };
   }, [canvas, mode]);
 
