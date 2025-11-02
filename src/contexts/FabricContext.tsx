@@ -129,8 +129,32 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
       THEME.borderColor.separator
     );
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "0") {
+        setMode("erase");
+      } else if (e.key === "1") {
+        setMode("select");
+      } else if (e.key === "2") {
+        setMode("draw");
+        setDrawObject("line");
+      } else if (e.key === "3") {
+        setMode("draw");
+        setDrawObject("rectangle");
+      } else if (e.key === "4") {
+        setMode("draw");
+        setDrawObject("circle");
+      } else if (e.key === "5") {
+        setMode("draw");
+        setDrawObject("ruler");
+      }
+    };
+    window.addEventListener("keydown", (e) => {
+      handleKeyDown(e);
+    });
+
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
       fabricCanvasRef.current?.dispose();
     };
   }, []);
