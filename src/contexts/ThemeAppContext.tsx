@@ -13,6 +13,7 @@ type Theme = {
     primary: string;
     secondary: string;
     cta: string;
+    cta_hover: string;
     hover: string;
     active: string;
   };
@@ -57,7 +58,8 @@ export const ThemeAppProvider = ({ children }: { children: ReactNode }) => {
     bgColor: {
       primary: useColorModeValue("#ffffff", "#232329"),
       secondary: useColorModeValue("#ececf4", "#232329"),
-      cta: useColorModeValue("#5B57D1", "#B2AEFF"),
+      cta: useColorModeValue("#6965db", "#a8a5ff"),
+      cta_hover: useColorModeValue("#5b57d1", "#b2aeff"),
       hover: useColorModeValue("#F1F0FF", "#2E2D39"),
       active: useColorModeValue("#E0DFFF", "#403E6A"),
     },

@@ -4,6 +4,7 @@ import Zoom from "../ui/fabric/Zoom";
 import SelectMode from "../ui/fabric/SelectMode";
 import Options from "../ui/fabric/options";
 import { useThemeApp } from "../../contexts/ThemeAppContext";
+import ChangeTo3DButton from "../ui/fabric/ChangeTo3DButton";
 
 const TwoDimensionCanvas = () => {
   const { canvasRef } = useFabric();
@@ -25,6 +26,7 @@ const TwoDimensionCanvas = () => {
         <Options />
         <SelectMode />
         <Zoom />
+        <ChangeTo3DButton />
       </Box>
     </Box>
   );
