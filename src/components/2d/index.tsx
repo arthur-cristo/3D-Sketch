@@ -4,14 +4,20 @@ import Zoom from "../ui/fabric/Zoom";
 import SelectMode from "../ui/fabric/SelectMode";
 import Options from "../ui/fabric/options";
 import { useThemeApp } from "../../contexts/ThemeAppContext";
-import ChangeTo3DButton from "../ui/fabric/ChangeTo3DButton";
+import { useApp } from "../../contexts/AppContex";
 
 const TwoDimensionCanvas = () => {
+  const { mode } = useApp();
   const { canvasRef } = useFabric();
   const { THEME } = useThemeApp();
 
   return (
-    <Box position="relative">
+    <Box
+      position="relative"
+      zIndex={mode === "2D" ? 0 : -1}
+      visibility={mode === "2D" ? "visible" : "hidden"}
+      pointerEvents={mode === "2D" ? "auto" : "none"}
+    >
       <Box
         id="fabric-canvas-container"
         position="fixed"
@@ -26,7 +32,6 @@ const TwoDimensionCanvas = () => {
         <Options />
         <SelectMode />
         <Zoom />
-        <ChangeTo3DButton />
       </Box>
     </Box>
   );
