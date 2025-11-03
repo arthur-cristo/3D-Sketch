@@ -59,8 +59,9 @@ export const handleMouseMoveDraw = (
 ) => {
   if (!e.viewportPoint || !drawRef.current.isDrawing) return;
   const startPoint = drawRef.current.startPoint;
+  if (!startPoint) return;
   const pointer = canvas.getScenePoint(e.e);
-  const snapPoint = findSnapPoint(canvas, pointer);
+  const snapPoint = findSnapPoint(canvas, pointer, startPoint);
 
   const endPoint = snapPoint || pointer;
 
@@ -70,7 +71,6 @@ export const handleMouseMoveDraw = (
       y2: endPoint.y,
     });
   } else if (drawRef.current.previewSquare) {
-    if (!startPoint) return;
     const left = Math.min(startPoint.x, endPoint.x);
     const top = Math.min(startPoint.y, endPoint.y);
     const width = Math.abs(startPoint.x - endPoint.x);
@@ -115,17 +115,17 @@ export const handleMouseMoveDraw = (
     }
   }
 
-  if (drawRef.current.previewRuler && drawRef.current.startPoint) {
+  if (drawRef.current.previewRuler && startPoint) {
     let text = "";
     if (drawRef.current.previewLine) {
       const length = Math.hypot(
-        endPoint.x - drawRef.current.startPoint?.x,
-        endPoint.y - drawRef.current.startPoint?.y
+        endPoint.x - startPoint?.x,
+        endPoint.y - startPoint?.y
       );
       text = getLengthFromPixels(length, scale);
     } else if (drawRef.current.previewSquare) {
-      const width = Math.abs(endPoint.x - drawRef.current.startPoint.x);
-      const height = Math.abs(endPoint.y - drawRef.current.startPoint.y);
+      const width = Math.abs(endPoint.x - startPoint.x);
+      const height = Math.abs(endPoint.y - startPoint.y);
       text =
         width * height > 0
           ? getAreaFromPixels(width * height, scale)
@@ -133,26 +133,25 @@ export const handleMouseMoveDraw = (
     } else if (drawRef.current.previewCircle) {
       if (e.e.shiftKey) {
         const radius = Math.hypot(
-          endPoint.x - drawRef.current.startPoint.x,
-          endPoint.y - drawRef.current.startPoint.y
+          endPoint.x - startPoint.x,
+          endPoint.y - startPoint.y
         );
         text = getAreaFromPixels(Math.PI * radius * radius, scale);
       } else {
-        const rx = Math.abs(endPoint.x - drawRef.current.startPoint.x) / 2;
-        const ry = Math.abs(endPoint.y - drawRef.current.startPoint.y) / 2;
+        const rx = Math.abs(endPoint.x - startPoint.x) / 2;
+        const ry = Math.abs(endPoint.y - startPoint.y) / 2;
         text = getAreaFromPixels(Math.PI * rx * ry, scale);
       }
     }
 
-    const deltaX = endPoint.x - drawRef.current.startPoint.x;
-    const deltaY = endPoint.y - drawRef.current.startPoint.y;
+    const deltaX = endPoint.x - startPoint.x;
+    const deltaY = endPoint.y - startPoint.y;
     const isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
     const isLine = drawRef.current.previewLine!!;
     const marginBottom = isHorizontal && isLine ? -RULER_OFFSET : 0;
     const marginLeft = !isHorizontal && isLine ? RULER_OFFSET * 2 : 0;
-    const midX = (drawRef.current.startPoint?.x + endPoint.x) / 2 + marginLeft;
-    const midY =
-      (drawRef.current.startPoint?.y + endPoint.y) / 2 + marginBottom;
+    const midX = (startPoint?.x + endPoint.x) / 2 + marginLeft;
+    const midY = (startPoint?.y + endPoint.y) / 2 + marginBottom;
     drawRef.current.previewRuler.set({
       text: text,
       left: midX,
@@ -202,21 +201,19 @@ export const handleMouseUpDraw = (
   }
 
   const pointer = canvas.getScenePoint(e.e);
-  const snapPoint = findSnapPoint(canvas, pointer);
+  const startPoint = drawRef.current.startPoint;
+  const snapPoint = findSnapPoint(canvas, pointer, startPoint);
   const endPoint = snapPoint || pointer;
 
   if (
-    drawRef.current.startPoint?.x !== undefined &&
-    drawRef.current.startPoint?.y !== undefined &&
-    Math.hypot(
-      endPoint.x - drawRef.current.startPoint?.x,
-      endPoint.y - drawRef.current.startPoint?.y
-    ) > 0
+    startPoint?.x !== undefined &&
+    startPoint?.y !== undefined &&
+    Math.hypot(endPoint.x - startPoint?.x, endPoint.y - startPoint?.y) > 0
   ) {
     if (drawObjects.type === "ruler") {
       const createRuler = new CreateRuler(
-        drawRef.current.startPoint.x,
-        drawRef.current.startPoint.y,
+        startPoint.x,
+        startPoint.y,
         RULER_TEXT_FONT_SIZE,
         tooltipColor,
         RULER_THICKNESS
@@ -230,21 +227,19 @@ export const handleMouseUpDraw = (
       });
 
       const pixelLength = Math.hypot(
-        endPoint.x - drawRef.current.startPoint.x,
-        endPoint.y - drawRef.current.startPoint.y
+        endPoint.x - startPoint.x,
+        endPoint.y - startPoint.y
       );
 
       const text = getLengthFromPixels(pixelLength, scale);
 
-      const deltaX = endPoint.x - drawRef.current.startPoint.x;
-      const deltaY = endPoint.y - drawRef.current.startPoint.y;
+      const deltaX = endPoint.x - startPoint.x;
+      const deltaY = endPoint.y - startPoint.y;
       const isHorizontal = Math.abs(deltaX) >= Math.abs(deltaY);
       const marginBottom = isHorizontal ? -RULER_OFFSET : 0;
       const marginLeft = !isHorizontal ? RULER_OFFSET * 2 : 0;
-      const midX =
-        (drawRef.current.startPoint?.x + endPoint.x) / 2 + marginLeft;
-      const midY =
-        (drawRef.current.startPoint?.y + endPoint.y) / 2 + marginBottom;
+      const midX = (startPoint?.x + endPoint.x) / 2 + marginLeft;
+      const midY = (startPoint?.y + endPoint.y) / 2 + marginBottom;
       rulerText.set({
         text: text,
         left: midX,
@@ -260,8 +255,8 @@ export const handleMouseUpDraw = (
       ["rectangle", "line", "circle"].includes(drawObjects.type || "")
     ) {
       const createWall = new CreateWall(
-        drawRef.current.startPoint.x,
-        drawRef.current.startPoint.y,
+        startPoint.x,
+        startPoint.y,
         endPoint.x,
         endPoint.y,
         wallColor,

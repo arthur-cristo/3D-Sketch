@@ -119,6 +119,9 @@ export const setMouse = (mode: Modes, canvas: fabric.Canvas) => {
   } else if (mode === "select") {
     canvas.defaultCursor = "default";
     canvas.hoverCursor = "move";
+  } else if (mode === "erase") {
+    canvas.defaultCursor = "default";
+    canvas.hoverCursor = "pointer";
   } else {
     canvas.defaultCursor = "default";
     canvas.hoverCursor = "default";

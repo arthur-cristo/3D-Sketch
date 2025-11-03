@@ -1,12 +1,14 @@
+import devicePxPerCm from "../utils/devicePxPerCm";
+
 export const ZOOM = {
   MIN: 0.1,
   MAX: 2,
   STEP: 0.1,
 };
 
-export const GRID_SIZE = 25; // pixels
+export const GRID_SIZE = 1 * devicePxPerCm(); // pixels
 
-export const SNAP_THRESHOLD = 20;
+export const SNAP_THRESHOLD = 25;
 export const RULER_OFFSET = 15;
 export const SCALES = [20, 25, 50, 75, 100, 125];
 export const WALL_THICKNESS = {
