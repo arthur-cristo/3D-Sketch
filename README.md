@@ -2,13 +2,20 @@
 
 ## TODO:
 ### Desenhar:
+#### Personalizar
 - Selecionar cor
 - Selecionar grossura
-
-### Objetos:
+#### Objetos:
 - Porta (Angulo aberto)
 - Janela (Fina)
-
-### Opções (futuro):
+- Arcos
+#### Opções (futuro):
 - Camadas
-- Ctrl z
+- Ctrl Z
+
+### 3D:
+- Quadrados
+- Circulos
+- Portas
+- Arcos
+- Janelas

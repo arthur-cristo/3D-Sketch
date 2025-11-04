@@ -54,6 +54,22 @@ interface FabricContext {
   setScale: Dispatch<SetStateAction<number>>;
   drawObject: DrawObjects;
   setDrawObject: (obj: Partial<DrawObjects>) => void;
+  getFabricObjects: () => {
+    walls: {
+      type: string;
+      centerX: number;
+      centerY: number;
+      width: number;
+      height: number;
+      scaleX: number;
+      scaleY: number;
+      angle: fabric.TDegree;
+      radiusX: number;
+      radiusY: number;
+      length: number;
+    }[];
+    center: fabric.Point | undefined;
+  };
 }
 
 export const FabricContext = createContext<FabricContext>({} as FabricContext);
@@ -277,6 +293,52 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
     canvas.requestRenderAll();
   }, [canvas, colorMode]);
 
+  const getFabricObjects = () => {
+    const wallObjects =
+      canvas?.getObjects().filter((obj) => (obj as any).data?.isWall) || [];
+    const walls = wallObjects.map((wall) => {
+      const center = wall.getCenterPoint();
+      if (wall.type === "line") {
+        const points = (wall as fabric.Line).calcLinePoints();
+        const length = Math.hypot(points.x2 - points.x1, points.y2 - points.y1);
+        const angle = Math.atan2(points.y2 - points.y1, points.x2 - points.x1);
+
+        return {
+          type: "line",
+          centerX: center.x,
+          centerY: center.y,
+          length: length,
+          angle: angle,
+          width: 0,
+          height: 0,
+          scaleX: 1,
+          scaleY: 1,
+          radiusX: 0,
+          radiusY: 0,
+        };
+      }
+      const radiusX = ((wall as fabric.Ellipse).rx ?? 0) * wall.scaleX;
+      const radiusY = ((wall as fabric.Ellipse).ry ?? 0) * wall.scaleY;
+      const width = (wall.width ?? 0) * wall.scaleX;
+      const height = (wall.height ?? 0) * wall.scaleY;
+      return {
+        type: wall.type,
+        centerX: center.x,
+        centerY: center.y,
+        width,
+        height,
+        scaleX: wall.scaleX ?? 1,
+        scaleY: wall.scaleY ?? 1,
+        angle: wall.angle,
+        radiusX,
+        radiusY,
+        length: 0,
+      };
+    });
+    const center = canvas?.getCenterPoint();
+    return { walls, center };
+  };
+
   return (
     <FabricContext.Provider
       value={{
@@ -293,6 +355,7 @@ export const FabricProvider = ({ children }: { children: ReactNode }) => {
         setScale,
         drawObject,
         setDrawObject,
+        getFabricObjects,
       }}
     >
       {children}
